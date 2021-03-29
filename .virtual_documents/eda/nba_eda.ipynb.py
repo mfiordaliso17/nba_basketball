@@ -130,7 +130,7 @@ sns.histplot(game_df,
 
 ## FIX SPEED OF THIS APPROACH
 game_id_group = (game_df
-                 .groupby(['game_id'], as_index=False))
+                 .groupby(['game_id'], as_index=False)['odds'])
 
 game_df = (game_df
            .assign(max_game_odd = game_id_group.transform(max),
@@ -142,7 +142,12 @@ game_df['favorite'] = np.where(game_df['min_game_odd'] get_ipython().getoutput("
 
 
 
+### NEW ATTEMPT
+game_id_group = (game_df
+                 .groupby(['game_id'], as_index=False)['odds'])
 
+game_df['max_game_odd'] = game_id_group.transform(max)
+game_df['min_game_odd'] = game_id_group.transform(min)
 
 
 
