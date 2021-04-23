@@ -4,6 +4,7 @@ import plotly.express as px
 from datetime import datetime, timedelta
 import seaborn as sns
 import matplotlib.pyplot as plt
+import math
 
 # dictionary
 import sbr_team_name 
@@ -115,7 +116,6 @@ sns.heatmap(game_df.loc[:, corr_in_game].corr(),
             linewidths=0.2)
 
 
-
 plt.figure(figsize=(13,10))
 plt.xlim(-1500, 1500)
 plt.title('NBA Sportsbook Odds - Pinnacle')
@@ -128,7 +128,7 @@ sns.histplot(game_df,
 
 # Create fav/und binary variable and look for groupings
 
-## FIX SPEED OF THIS APPROACH
+## binary variable
 game_id_group = (game_df
                  .groupby(['game_id'], as_index=False)['odds'])
 
@@ -136,24 +136,78 @@ game_df = (game_df
            .assign(max_game_odd = game_id_group.transform(max),
                    min_game_odd = game_id_group.transform(min)))
 
-game_df['favorite'] = np.where(game_df['min_game_odd'] get_ipython().getoutput("= game_df['max_game_odd'] and game_df['odds'] == game_df['min_game_odd'], 1, 0)")
+game_df['favorite'] = np.where((game_df['min_game_odd'] get_ipython().getoutput("= game_df['max_game_odd']) & (game_df['odds'] == game_df['min_game_odd']), 1, 0)")
+
+
+
+
+## odd bin
+
+game_df['odd_bin'] = pd.cut(game_df['odds'], bins = np.arange(-1000, 1000, 100), right=False)
+
+odd_bin_win_summary = (game_df
+                       .groupby(['odd_bin'])
+                       .agg(win = ('game_won', sum),
+                            ct = ('game_won', 'count'))
+                       .reset_index()
+                       .assign(win_prop = lambda x: x['win'] / x['ct']))
+
+
+plt.figure(figsize=(13,10))
+plt.title('Odd Bin Win Percentage')
+plt.xticks(rotation = 90)
+
+sns.barplot(data = odd_bin_win_summary,
+            x='odd_bin',
+            y='win_prop',
+            color = 'blue')
+
+
+# odd bin group functions
+def odd_bin_group_fn(odds, favorite):
+    if odds <= -200 and favorite == 1:
+        return('large_favorite')
+    elif odds > -200 and odds < 0 and favorite == 1:
+        return('small_favorite')
+    elif odds < 200 and odds > 0 and favorite == 0:
+        return('small_underdog')
+    elif odds >= 200 and favorite == 0:
+        return('large_underdog')
+    else:
+        return('other')
+
+
+game_df['odd_group'] = game_df.apply(lambda row: odd_bin_group_fn(row["odds"], row["favorite"]), axis=1)
+
+
+# plot ct and win % by group
+
+
+odd_group_win_summary = (game_df
+                       .groupby('odd_group')
+                       .agg(win = ('game_won', sum),
+                            ct = ('game_won', 'count'))
+                       .reset_index()
+                       .assign(win_prop = lambda x: x['win'] / x['ct']))
+
+# reorder
+odd_group_win_summary['odd_group'] = pd.Categorical(odd_group_win_summary['odd_group'],
+                                                    categories = ['large_favorite', 'small_favorite', 'small_underdog', 'large_underdog', 'other'],
+                                                    ordered = True)
 
 
 
 
 
-### NEW ATTEMPT
-game_id_group = (game_df
-                 .groupby(['game_id'], as_index=False)['odds'])
 
-game_df['max_game_odd'] = game_id_group.transform(max)
-game_df['min_game_odd'] = game_id_group.transform(min)
+plt.figure(figsize=(13,10))
+plt.title('Odd Bin Win Percentage')
+plt.xticks(rotation = 90)
 
-
-
-
-
-
+sns.barplot(data = odd_group_win_summary,
+            x='odd_group',
+            y='win_prop',
+            color = 'blue')
 
 
 
@@ -168,7 +222,7 @@ game_df['min_game_odd'] = game_id_group.transform(min)
 # Build Model
 
 
-
+game_df
 
 
 
